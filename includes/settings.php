@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 	// Require API wrapper class in classes folder
 	require_once PMPRO_KEAP_DIR . '/classes/class-pmpro-keap-api-wrapper.php';
 
@@ -39,17 +43,17 @@ function pmpro_keap_admin_init() {
 	add_settings_field( 'pmpro_keap_users_tags', __( 'All Users Tags', 'pmpro-keap' ), 'pmpro_keap_users_tags', 'pmpro_keap_options', 'pmpro_keap_section_general' );
 	add_settings_section( 'pmpro_keap_section_levels', '', 'pmpro_keap_section_levels', 'pmpro_keap_options' );
 
-	if ( isset( $_GET['action'] ) && $_GET['action'] == 'authorize_keap' &&
+	if ( isset( $_GET['action'] ) && $_GET['action'] == 'authorize_keap' && isset( $_GET['pmpro_keap_authorize_nonce'] ) &&
 		wp_verify_nonce( sanitize_key( $_GET['pmpro_keap_authorize_nonce'] ), 'pmpro_keap_authorize_nonce' ) ) {
 		$keap    = PMPro_Keap_Api_Wrapper::get_instance();
-		wp_redirect( $keap->pmpro_keap_get_authorization_url() );
+		wp_redirect( $keap->pmpro_keap_get_authorization_url() ); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- Offsite redirect to the Keap OAuth authorization screen.
 		exit;
 	}
 
 	// Handle the OAuth callback, the 'code' parameter is used as a nonce response from Keap and will be used to request the access token.
 	if ( isset( $_GET['page'] ) && $_GET['page'] == 'pmpro-keap' && isset( $_GET['code'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
 		$keap               = PMPro_Keap_Api_Wrapper::get_instance();
-		$authorization_code = sanitize_text_field( $_GET['code'] );
+		$authorization_code = sanitize_text_field( wp_unslash( $_GET['code'] ) );
 		$token_response     = $keap->pmpro_keap_request_token( $authorization_code );
 
 		if ( isset( $token_response['access_token'] ) ) {
@@ -59,12 +63,12 @@ function pmpro_keap_admin_init() {
 
 		} else {
 			// Handle token request error
-			echo '<div class="error"><p>' . sprintf( esc_html__( 'Error requesting access token: %s', 'pmpro-keap' ), $token_response['error_description'] ) . '</p></div>';
+			echo '<div class="error"><p>' . sprintf( esc_html__( 'Error requesting access token: %s', 'pmpro-keap' ), esc_html( $token_response['error_description'] ) ) . '</p></div>';
 			return;
 		}
 
 		// Redirect to the settings page after processing
-		wp_redirect( admin_url( 'admin.php?page=pmpro-keap' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=pmpro-keap' ) );
 		exit;
 	}
 }
@@ -159,7 +163,7 @@ function pmpro_keap_users_tags() {
 			$checked = in_array( $tag['id'], $selected_tags ) ? 'checked' : '';
 			?>
 			<div class="pmpro_clickable">
-				<input type="checkbox" id="pmpro_keap_options_users_tags_<?php echo esc_attr( $tag['id'] ); ?>" name="pmpro_keap_options[users_tags][]" value="<?php echo esc_attr( $tag['id'] ); ?>" <?php echo $checked; ?> />
+				<input type="checkbox" id="pmpro_keap_options_users_tags_<?php echo esc_attr( $tag['id'] ); ?>" name="pmpro_keap_options[users_tags][]" value="<?php echo esc_attr( $tag['id'] ); ?>" <?php echo esc_attr( $checked ); ?> />
 				<label for="pmpro_keap_options_users_tags_<?php echo esc_attr( $tag['id'] ); ?>"><?php echo esc_html( $tag['name'] ); ?></label>
 			</div>
 			<?php
@@ -243,7 +247,7 @@ function pmpro_keap_section_levels() {
 										$checked = in_array( $tag['id'], $tags ) ? 'checked' : '';
 										?>
 										<div class="pmpro_clickable">
-											<input type="checkbox" id="pmpro_keap_options_levels_<?php echo esc_attr( $level->id ); ?>_<?php echo esc_attr( $tag['id'] ); ?>" name="pmpro_keap_options[levels][<?php echo esc_attr( $level->id ); ?>][]" value="<?php echo esc_attr( $tag['id'] ); ?>" <?php echo $checked; ?> />
+											<input type="checkbox" id="pmpro_keap_options_levels_<?php echo esc_attr( $level->id ); ?>_<?php echo esc_attr( $tag['id'] ); ?>" name="pmpro_keap_options[levels][<?php echo esc_attr( $level->id ); ?>][]" value="<?php echo esc_attr( $tag['id'] ); ?>" <?php echo esc_attr( $checked ); ?> />
 											<label for="pmpro_keap_options_levels_<?php echo esc_attr( $level->id ); ?>_<?php echo esc_attr( $tag['id'] ); ?>"><?php echo esc_html( $tag['name'] ); ?></label>
 										</div>
 										<?php

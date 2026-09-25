@@ -11,6 +11,10 @@
  * Domain Path: /languages
  */
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 define( 'PMPRO_KEAP_DIR', dirname( __FILE__ ) );
 define( 'PMPRO_KEAP_VERSION', '1.0.4' );
 
