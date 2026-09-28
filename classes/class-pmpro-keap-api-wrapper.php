@@ -130,8 +130,8 @@ class PMPro_Keap_Api_Wrapper {
 			$this->token = sanitize_text_field( $response['access_token'] );
 			update_option( 'pmpro_keap_access_token', $this->token );
 			update_option( 'pmpro_keap_refresh_token', sanitize_text_field( $response['refresh_token'] ) );
-		} else {
-			// Seems we lost authorization, clear the token
+		} elseif ( ! isset( $response['error'] ) || 'http_request_failed' !== $response['error'] ) {
+			// Seems we lost authorization, clear the token. Don't clear it if we just couldn't connect to Keap.
 			update_option( 'pmpro_keap_access_token', '' );
 		}
 
@@ -170,9 +170,8 @@ class PMPro_Keap_Api_Wrapper {
 
 				$response = $this->pmpro_keap_make_curl_request( $url, $method, $data, $headers );
 			} else {
-				// It seems that the refresh token is not valid anymore, we need to re-authenticate
-				// empty the token from the options
-				update_option( 'pmpro_keap_access_token', '' );
+				// It seems that the refresh token is not valid anymore, we need to re-authenticate.
+				// pmpro_keap_refresh_token() already emptied the token from the options if needed.
 				return $refresh_response;
 			}
 		}
@@ -305,6 +304,11 @@ class PMPro_Keap_Api_Wrapper {
 		// Attempt a test API request to validate the token.
 		$response = $this->pmpro_keap_make_request( 'GET', 'contacts?limit=1' );
 
+		// If we couldn't connect to Keap, don't try to use the API right now.
+		if ( isset( $response['error'] ) && 'http_request_failed' === $response['error'] ) {
+			return false;
+		}
+
 		// Check if the response indicates an unauthorized token.
 		if ( isset( $response['fault'] ) && in_array( $response['fault']['detail']['errorcode'], self::ERROR_CODES, true ) ) {
 
@@ -316,10 +320,13 @@ class PMPro_Keap_Api_Wrapper {
 					// Token refreshed successfully, update it and return true.
 					$this->token = $refresh_response['access_token'];
 					return true;
-				} else {
+				} elseif ( ! isset( $refresh_response['error'] ) || 'http_request_failed' !== $refresh_response['error'] ) {
 					// Refresh token failed, clear stored tokens.
 					update_option( 'pmpro_keap_access_token', '' );
-					update_otion( 'pmpro_keap_refresh_token', '' );
+					update_option( 'pmpro_keap_refresh_token', '' );
+					return false;
+				} else {
+					// Couldn't connect to Keap, keep the stored tokens for the next request.
 					return false;
 				}
 			} else {
@@ -400,7 +407,11 @@ class PMPro_Keap_Api_Wrapper {
 
 		// Check for errors
 		if ( is_wp_error( $response ) ) {
-			return $response;
+			// Return connection errors in the same format as Keap's OAuth errors so that callers can always treat the response as an array.
+			return array(
+				'error'             => 'http_request_failed',
+				'error_description' => $response->get_error_message(),
+			);
 		}
 
 		// Get the response body
