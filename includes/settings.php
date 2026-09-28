@@ -60,11 +60,12 @@ function pmpro_keap_admin_init() {
 		// Make sure that the state matches the one generated when this user started the authorization.
 		$state_key      = 'pmpro_keap_oauth_state_' . get_current_user_id();
 		$expected_state = get_transient( $state_key );
-		delete_transient( $state_key );
 		if ( empty( $expected_state ) || ! isset( $_GET['state'] ) || ! hash_equals( $expected_state, sanitize_text_field( wp_unslash( $_GET['state'] ) ) ) ) {
 			echo '<div class="error"><p>' . esc_html__( 'Error requesting access token: The authorization request could not be verified. Please try authorizing with Keap again.', 'pmpro-keap' ) . '</p></div>';
 			return;
 		}
+		// The state is valid, so delete it so that it can only be used once.
+		delete_transient( $state_key );
 
 		$keap               = PMPro_Keap_Api_Wrapper::get_instance();
 		$authorization_code = sanitize_text_field( $_GET['code'] );
