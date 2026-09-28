@@ -52,6 +52,11 @@ function pmpro_keap_update_keap_contact( $user_id ) {
 	$keap     = PMPro_Keap_Api_Wrapper::get_instance();
 	$response = $keap->pmpro_keap_get_contact_by_email( $user->user_email );
 
+	// Bail if the lookup failed so that we don't create a duplicate contact.
+	if ( ! isset( $response['count'] ) ) {
+		return;
+	}
+
 	// Add the customer to Keap if they don't exist, otherwise update their contact if they do exist.
 	if ( $response['count'] == 0 ) {
 		$response   = $keap->pmpro_keap_add_contact( $user );
