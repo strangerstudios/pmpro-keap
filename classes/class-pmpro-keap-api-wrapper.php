@@ -317,10 +317,13 @@ class PMPro_Keap_Api_Wrapper {
 					// Token refreshed successfully, update it and return true.
 					$this->token = $refresh_response['access_token'];
 					return true;
-				} else {
+				} elseif ( ! isset( $refresh_response['error'] ) || 'http_request_failed' !== $refresh_response['error'] ) {
 					// Refresh token failed, clear stored tokens.
 					update_option( 'pmpro_keap_access_token', '' );
 					update_option( 'pmpro_keap_refresh_token', '' );
+					return false;
+				} else {
+					// Couldn't connect to Keap, keep the stored tokens for the next request.
 					return false;
 				}
 			} else {
