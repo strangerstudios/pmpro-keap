@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 global $msg, $msgt;
 
 // Only admins can access this page.
@@ -18,8 +22,8 @@ if ( ! empty( $_REQUEST['savesettings'] ) && ( empty( $_REQUEST['pmpro_keap_nonc
 if ( ! empty( $_REQUEST['savesettings'] ) ) {
 	// save options
 	$options               = get_option( 'pmpro_keap_options' );
-	$options['api_key']    = sanitize_text_field( $_REQUEST['pmpro_keap_options']['api_key'] );
-	$options['api_secret'] = sanitize_text_field( $_REQUEST['pmpro_keap_options']['api_secret'] );
+	$options['api_key']    = isset( $_REQUEST['pmpro_keap_options']['api_key'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['pmpro_keap_options']['api_key'] ) ) : '';
+	$options['api_secret'] = isset( $_REQUEST['pmpro_keap_options']['api_secret'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['pmpro_keap_options']['api_secret'] ) ) : '';
 
 	// Reset authentication if the API key or secret are missing.
 	if ( empty( $options['api_key'] ) || empty( $options['api_secret'] ) ) {
@@ -29,7 +33,7 @@ if ( ! empty( $_REQUEST['savesettings'] ) ) {
 
 	// Save level tags and clear them if unselected or missing.
 	if ( ! empty( $_REQUEST['pmpro_keap_options']['levels'] ) ) {
-		$submitted_levels = $_REQUEST['pmpro_keap_options']['levels'];
+		$submitted_levels = wp_unslash( $_REQUEST['pmpro_keap_options']['levels'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Each tag is sanitized with sanitize_text_field() below.
 
 		// Iterate over existing levels to check if they should be updated or deleted
 		foreach ( $options['levels'] as $level_id => $level_tags ) {
@@ -63,7 +67,7 @@ if ( ! empty( $_REQUEST['savesettings'] ) ) {
 
 	// Save the User Tags and delete them if they are missing.
 	if ( ! empty( $_REQUEST['pmpro_keap_options']['users_tags'] ) ) {
-		$options['users_tags'] = array_map( 'sanitize_text_field', $_REQUEST['pmpro_keap_options']['users_tags'] );
+		$options['users_tags'] = array_map( 'sanitize_text_field', wp_unslash( $_REQUEST['pmpro_keap_options']['users_tags'] ) );
 	} else {
 		$options['users_tags'] = array();
 	}
