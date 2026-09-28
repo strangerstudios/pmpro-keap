@@ -39,15 +39,34 @@ function pmpro_keap_admin_init() {
 	add_settings_field( 'pmpro_keap_users_tags', __( 'All Users Tags', 'pmpro-keap' ), 'pmpro_keap_users_tags', 'pmpro_keap_options', 'pmpro_keap_section_general' );
 	add_settings_section( 'pmpro_keap_section_levels', '', 'pmpro_keap_section_levels', 'pmpro_keap_options' );
 
+	// Only admins can connect the site to Keap.
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
 	if ( isset( $_GET['action'] ) && $_GET['action'] == 'authorize_keap' &&
 		wp_verify_nonce( sanitize_key( $_GET['pmpro_keap_authorize_nonce'] ), 'pmpro_keap_authorize_nonce' ) ) {
+		// Generate a state value for this user so that we can verify the OAuth callback.
+		$state = wp_generate_password( 32, false );
+		set_transient( 'pmpro_keap_oauth_state_' . get_current_user_id(), $state, HOUR_IN_SECONDS );
+
 		$keap    = PMPro_Keap_Api_Wrapper::get_instance();
-		wp_redirect( $keap->pmpro_keap_get_authorization_url() );
+		wp_redirect( $keap->pmpro_keap_get_authorization_url( $state ) );
 		exit;
 	}
 
 	// Handle the OAuth callback, the 'code' parameter is used as a nonce response from Keap and will be used to request the access token.
 	if ( isset( $_GET['page'] ) && $_GET['page'] == 'pmpro-keap' && isset( $_GET['code'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification
+		// Make sure that the state matches the one generated when this user started the authorization.
+		$state_key      = 'pmpro_keap_oauth_state_' . get_current_user_id();
+		$expected_state = get_transient( $state_key );
+		if ( empty( $expected_state ) || ! isset( $_GET['state'] ) || ! hash_equals( $expected_state, sanitize_text_field( wp_unslash( $_GET['state'] ) ) ) ) {
+			echo '<div class="error"><p>' . esc_html__( 'Error requesting access token: The authorization request could not be verified. Please try authorizing with Keap again.', 'pmpro-keap' ) . '</p></div>';
+			return;
+		}
+		// The state is valid, so delete it so that it can only be used once.
+		delete_transient( $state_key );
+
 		$keap               = PMPro_Keap_Api_Wrapper::get_instance();
 		$authorization_code = sanitize_text_field( $_GET['code'] );
 		$token_response     = $keap->pmpro_keap_request_token( $authorization_code );

@@ -48,18 +48,21 @@ class PMPro_Keap_Api_Wrapper {
 	/**
 	 * Get the authorization URL
 	 *
+	 * @param string $state Optional. Value that Keap will pass back to the redirect URI.
 	 * @return string The URL to request authorization.
 	 * @since 1.0
 	 */
-	public function pmpro_keap_get_authorization_url() {
-		$query = build_query(
-			array(
-				'client_id'     => $this->clientId,
-				'redirect_uri'  => urlencode( $this->redirectUri ),
-				'response_type' => 'code',
-				'scope'         => 'full',
-			)
+	public function pmpro_keap_get_authorization_url( $state = '' ) {
+		$args = array(
+			'client_id'     => $this->clientId,
+			'redirect_uri'  => urlencode( $this->redirectUri ),
+			'response_type' => 'code',
+			'scope'         => 'full',
 		);
+		if ( ! empty( $state ) ) {
+			$args['state'] = urlencode( $state );
+		}
+		$query = build_query( $args );
 
 		return self::AUTHORIZATION_URL . "?$query";
 	}
