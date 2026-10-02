@@ -51,7 +51,7 @@ function pmpro_keap_admin_init() {
 	if ( isset( $_GET['action'] ) && $_GET['action'] == 'authorize_keap' && isset( $_GET['pmpro_keap_authorize_nonce'] ) &&
 		wp_verify_nonce( sanitize_key( $_GET['pmpro_keap_authorize_nonce'] ), 'pmpro_keap_authorize_nonce' ) ) {
 		// Generate a state value for this user so that we can verify the OAuth callback.
-		$state = wp_generate_password( 32, false );
+		$state = bin2hex( random_bytes( 16 ) );
 		set_transient( 'pmpro_keap_oauth_state_' . get_current_user_id(), $state, HOUR_IN_SECONDS );
 
 		$keap    = PMPro_Keap_Api_Wrapper::get_instance();
