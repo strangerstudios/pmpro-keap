@@ -3,7 +3,7 @@ Contributors: strangerstudios
 Tags: paid memberships pro, keap, crm
 Requires at least: 5.0
 Tested up to: 7.1
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 
 Subscribe and tag your Paid Memberships Pro members in Keap.
 
@@ -30,6 +30,9 @@ This plugin integrates Paid Memberships Pro with Keap (formerly Infusionsoft) CR
 View full documentation at: https://www.paidmembershipspro.com/add-ons/keap-integration/
 
 == Changelog ==
+= 1.0.6 - 2026-11-19 =
+* BUG FIX: Fixed an issue where the Keap authorization could fail state verification if another plugin filtered generated passwords. #13 (@dparker1005)
+
 = 1.0.5 - 2026-09-28 =
 * SECURITY: Keap authorization now requires an administrator and verifies the OAuth state value. #11 (@dparker1005)
 * SECURITY: Escaped the Keap token request error message shown on the settings page. #10 (@dparker1005)
