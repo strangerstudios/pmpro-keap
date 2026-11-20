@@ -65,7 +65,10 @@ function pmpro_keap_admin_init() {
 		$state_key      = 'pmpro_keap_oauth_state_' . get_current_user_id();
 		$expected_state = get_transient( $state_key );
 		if ( empty( $expected_state ) || ! isset( $_GET['state'] ) || ! hash_equals( $expected_state, sanitize_text_field( wp_unslash( $_GET['state'] ) ) ) ) {
-			echo '<div class="error"><p>' . esc_html__( 'Error requesting access token: The authorization request could not be verified. Please try authorizing with Keap again.', 'pmpro-keap' ) . '</p></div>';
+			// Show the error in the PMPro admin header. Echoing here would print it before the page markup.
+			global $msg, $msgt;
+			$msg  = -1;
+			$msgt = esc_html__( 'Error requesting access token: The authorization request could not be verified. Please try authorizing with Keap again.', 'pmpro-keap' );
 			return;
 		}
 		// The state is valid, so delete it so that it can only be used once.
@@ -81,8 +84,11 @@ function pmpro_keap_admin_init() {
 			update_option( 'pmpro_keap_refresh_token', sanitize_text_field( $token_response['refresh_token'] ) );
 
 		} else {
-			// Handle token request error
-			echo '<div class="error"><p>' . sprintf( esc_html__( 'Error requesting access token: %s', 'pmpro-keap' ), esc_html( $token_response['error_description'] ) ) . '</p></div>';
+			// Handle token request error. Show it in the PMPro admin header since echoing here would print it before the page markup.
+			global $msg, $msgt;
+			$error_description = ! empty( $token_response['error_description'] ) ? $token_response['error_description'] : __( 'Unknown error.', 'pmpro-keap' );
+			$msg               = -1;
+			$msgt              = sprintf( esc_html__( 'Error requesting access token: %s', 'pmpro-keap' ), esc_html( $error_description ) );
 			return;
 		}
 
