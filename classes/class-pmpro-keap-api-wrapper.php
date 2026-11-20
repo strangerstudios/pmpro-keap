@@ -279,6 +279,12 @@ class PMPro_Keap_Api_Wrapper {
 	public function pmpro_keap_get_tags_id_for_contact( $contact_id ) {
 		$tags   = $this->pmpro_keap_get_tags_for_contact( $contact_id );
 		$tagIds = array();
+
+		// Return no tags if Keap returned an error or nothing.
+		if ( empty( $tags['tags'] ) || ! is_array( $tags['tags'] ) ) {
+			return $tagIds;
+		}
+
 		foreach ( $tags['tags'] as $tag ) {
 			$tagIds[] = $tag['tag']['id'];
 		}
