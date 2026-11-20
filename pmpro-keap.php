@@ -60,6 +60,11 @@ function pmpro_keap_update_keap_contact( $user_id ) {
 	// Add the customer to Keap if they don't exist, otherwise update their contact if they do exist.
 	if ( $response['count'] == 0 ) {
 		$response   = $keap->pmpro_keap_add_contact( $user );
+
+		// Bail if the contact could not be created.
+		if ( empty( $response['id'] ) ) {
+			return;
+		}
 		$contact_id = $response['id'];
 	} else {
 		$contact_id = $response['contacts'][0]['id'];
