@@ -24,11 +24,12 @@ require_once PMPRO_KEAP_DIR . '/classes/class-pmpro-keap-api-wrapper.php';
 /**
  * Create or Update a Contact in keap given an email address. May include tags and additional fields.
  *
- * @param int $user_id The WP user id.
+ * @param int    $user_id   The WP user id.
+ * @param string $old_email Optional. The user's previous email address, used to find their existing contact if their email changed.
  * @return int The contact ID in keap.
  * @since 1.0
  */
-function pmpro_keap_update_keap_contact( $user_id ) {
+function pmpro_keap_update_keap_contact( $user_id, $old_email = '' ) {
 	// Bail if pmpro_getMembershipLevelsForUser doesn't exist
 	if ( ! function_exists( 'pmpro_getMembershipLevelsForUser' ) ) {
 		return;
@@ -50,7 +51,19 @@ function pmpro_keap_update_keap_contact( $user_id ) {
 
 	// Connect to Keap.
 	$keap     = PMPro_Keap_Api_Wrapper::get_instance();
-	$response = $keap->pmpro_keap_get_contact_by_email( $user->user_email );
+	$response = null;
+
+	// If the user's email changed, look for their contact under the old email first so that we update it instead of creating a new one.
+	if ( ! empty( $old_email ) && $old_email !== $user->user_email ) {
+		$response = $keap->pmpro_keap_get_contact_by_email( $old_email );
+		if ( empty( $response['count'] ) ) {
+			$response = null;
+		}
+	}
+
+	if ( null === $response ) {
+		$response = $keap->pmpro_keap_get_contact_by_email( $user->user_email );
+	}
 
 	// Bail if the lookup failed so that we don't create a duplicate contact.
 	if ( ! isset( $response['count'] ) ) {
@@ -166,7 +179,9 @@ function pmpro_keap_profile_update( $user_id, $old_user_data ) {
 		return;
 	}
 
-	pmpro_keap_update_keap_contact( $user_id );
+	// Pass the old email so that an email change updates the existing contact.
+	$old_email = ( $old_user_data instanceof WP_User ) ? $old_user_data->user_email : '';
+	pmpro_keap_update_keap_contact( $user_id, $old_email );
 }
 add_action( 'profile_update', 'pmpro_keap_profile_update', 10, 2 );
 
