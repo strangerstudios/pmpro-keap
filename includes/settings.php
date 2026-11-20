@@ -309,6 +309,12 @@ function pmpro_keap_get_tags_for_level( $level_id ) {
  */
 function pmpro_keap_get_tags() {
 	$keap = PMPro_Keap_Api_Wrapper::get_instance();
+
+	// Don't call Keap if we aren't connected.
+	if ( empty( $keap->pmpro_keap_get_token() ) ) {
+		return array();
+	}
+
 	$tags = $keap->pmpro_keap_get_tags();
 	return ! empty( $tags['tags'] ) ? $tags['tags'] : array();
 }
